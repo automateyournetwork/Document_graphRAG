@@ -92,7 +92,7 @@ class ChatWithText:
 
 # Streamlit UI for uploading and processing text file
 def upload_and_process_text():
-    st.title('Text Buddy - Chat with Text Files')
+    st.title('Document graphRAG - Chat with document graphs using local LLM')
     uploaded_file = st.file_uploader("Choose a TXT file", type="txt")
     if uploaded_file:
         if not os.path.exists('ragtest/input'):
@@ -106,7 +106,7 @@ def upload_and_process_text():
             st.session_state['page'] = 2        
 
 def chat_interface():
-    st.title('Text Buddy - Chat with Text Files')
+    st.title('Document graphRAG - Chat with document graphs using local LLM')
     text_path = st.session_state.get('text_path')
     if not text_path or not os.path.exists(text_path):
         st.error("Text file missing or not found. Please go back and upload a TXT file.")
