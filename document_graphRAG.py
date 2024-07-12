@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import json
 import streamlit as st
@@ -50,7 +51,7 @@ class ChatWithText:
                 response = subprocess.run(command, shell=True, capture_output=True, text=True)
                 if response.stdout:
                     print(f"Raw response: {response.stdout.strip()}")  # Debug statement
-                    responses[method] = self.process_response(response.stdout.strip())
+                    responses[method] = self.process_response(response.stdout.strip(), method)
                 else:
                     responses[method] = "No response found."
             except Exception as e:
@@ -58,14 +59,23 @@ class ChatWithText:
                 responses[method] = "An error occurred during the query."
         return responses
 
-    def process_response(self, response):
+    def process_response(self, response, method):
         try:
-            response_json = json.loads(response)
-            print(f"Processed JSON response: {response_json}")  # Debug statement
-            return self.ensure_string_format(response_json.get('answer', 'No valid answer found.'))
-        except json.JSONDecodeError:
-            print(f"JSON decode error: {response}")  # Debug statement
-            return self.ensure_string_format(response)  # Return raw response if JSON decoding fails
+            # Extract only the answer part after SUCCESS:
+            if method == 'global':
+                match = re.search(r'SUCCESS: Global Search Response: (.*)', response, re.DOTALL)
+            elif method == 'local':
+                match = re.search(r'SUCCESS: Local Search Response: (.*)', response, re.DOTALL)
+
+            if match:
+                answer = match.group(1).strip()
+                print(f"Extracted answer: {answer}")  # Debug statement
+                return answer
+            else:
+                return "No valid answer found."
+        except Exception as e:
+            print(f"Error processing response: {e}")  # Debug statement
+            return "An error occurred while processing the response."
 
     def ensure_string_format(self, data):
         if isinstance(data, (int, float)):
