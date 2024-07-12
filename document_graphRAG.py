@@ -2,7 +2,10 @@ import os
 import re
 import subprocess
 import json
+import pandas as pd
 import streamlit as st
+import networkx as nx
+from pyvis.network import Network
 
 # Message classes
 class Message:
@@ -33,7 +36,7 @@ class ChatWithText:
 
             text_output_path = self.text_path
             print(f"Text output path: {text_output_path}")  # Debug statement
-            
+
             index_command = 'python -m graphrag.index --root ./ragtest'
             print(f"Running: {index_command}")  # Debug statement
             subprocess.run(index_command, shell=True, check=True)
@@ -90,6 +93,47 @@ class ChatWithText:
         print(f"Embedding request data: {data}")  # Debug statement
         return data
 
+# Function to read parquet files and return DataFrames
+def read_parquet_files(base_dir):
+    nodes_file = os.path.join(base_dir, "create_final_nodes.parquet")
+    relationships_file = os.path.join(base_dir, "create_final_relationships.parquet")
+    nodes_df = pd.read_parquet(nodes_file)
+    relationships_df = pd.read_parquet(relationships_file)
+
+    print("Nodes DataFrame columns:", nodes_df.columns)  # Debug statement
+    print("Relationships DataFrame columns:", relationships_df.columns)  # Debug statement
+
+    return nodes_df, relationships_df
+
+# Function to create a graph from the DataFrames
+def create_graph(nodes_df, relationships_df):
+    graph = nx.Graph()
+
+    # Adjust the column names based on your DataFrame structure
+    node_id_col = 'id'  # Corrected node id column name
+    node_label_col = 'title'  # Corrected node label column name
+    source_id_col = 'source'  # Corrected source id column name
+    target_id_col = 'target'  # Corrected target id column name
+    edge_label_col = 'description'  # Corrected edge label column name
+
+    # Add nodes to the graph
+    for _, row in nodes_df.iterrows():
+        graph.add_node(row[node_id_col], label=row[node_label_col])
+
+    # Add edges to the graph
+    for _, row in relationships_df.iterrows():
+        graph.add_edge(row[source_id_col], row[target_id_col], label=row[edge_label_col])
+
+    return graph
+
+# Function to visualize the graph using pyvis
+def visualize_graph(graph):
+    net = Network(notebook=True, width="100%", height="750px", bgcolor="#222222", font_color="white")
+    net.from_nx(graph)
+    net.show("graph.html")
+    st.write("### Interactive Graph")
+    st.components.v1.html(open("graph.html", "r").read(), height=800)
+
 # Streamlit UI for uploading and processing text file
 def upload_and_process_text():
     st.title('Document graphRAG - Chat with document graphs using local LLM')
@@ -114,6 +158,15 @@ def chat_interface():
 
     if 'chat_instance' not in st.session_state:
         st.session_state['chat_instance'] = ChatWithText(text_path=text_path)
+
+    # Visualize the graph only after reaching this page
+    base_dir = "ragtest/output/output/artifacts"
+    try:
+        nodes_df, relationships_df = read_parquet_files(base_dir)
+        graph = create_graph(nodes_df, relationships_df)
+        visualize_graph(graph)
+    except FileNotFoundError as e:
+        st.warning(str(e))
 
     user_input = st.text_input("Ask a question about the text data:")
     if user_input and st.button("Send"):
