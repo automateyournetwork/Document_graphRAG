@@ -1,7 +1,7 @@
 import os
 import re
-import subprocess
 import json
+import subprocess
 import pandas as pd
 import streamlit as st
 import networkx as nx
@@ -126,10 +126,42 @@ def create_graph(nodes_df, relationships_df):
 
     return graph
 
-# Function to visualize the graph using pyvis
+# Function to visualize the graph using pyvis with dynamic resizing and interactivity
 def visualize_graph(graph):
     net = Network(notebook=True, width="100%", height="750px", bgcolor="#222222", font_color="white")
     net.from_nx(graph)
+
+    # Add dynamic resizing and other interactivity options
+    options = {
+        "nodes": {
+            "shape": "dot",
+            "size": 10,
+            "font": {"size": 16}
+        },
+        "edges": {
+            "color": {"inherit": "from"},
+            "smooth": {"type": "dynamic"}
+        },
+        "physics": {
+            "enabled": True,
+            "barnesHut": {
+                "gravitationalConstant": -8000,
+                "centralGravity": 0.3,
+                "springLength": 95,
+                "springConstant": 0.04,
+                "damping": 0.09
+            },
+            "minVelocity": 0.75
+        },
+        "interaction": {
+            "hover": True,
+            "tooltipDelay": 200,
+            "hideEdgesOnDrag": True,
+            "hideNodesOnDrag": True
+        }
+    }
+
+    net.set_options(json.dumps(options))
     net.show("graph.html")
     st.write("### Interactive Graph")
     st.components.v1.html(open("graph.html", "r").read(), height=800)
