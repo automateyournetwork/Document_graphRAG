@@ -94,9 +94,9 @@ class ChatWithText:
         return data
 
 # Function to read parquet files and return DataFrames
-def read_parquet_files(base_dir):
-    nodes_file = os.path.join(base_dir, "create_final_nodes.parquet")
-    relationships_file = os.path.join(base_dir, "create_final_relationships.parquet")
+def read_parquet_files():
+    nodes_file = ("create_final_nodes.parquet")
+    relationships_file =("create_final_relationships.parquet")
     nodes_df = pd.read_parquet(nodes_file)
     relationships_df = pd.read_parquet(relationships_file)
 
@@ -192,9 +192,8 @@ def chat_interface():
         st.session_state['chat_instance'] = ChatWithText(text_path=text_path)
 
     # Visualize the graph only after reaching this page
-    base_dir = "ragtest/output/output/artifacts"
     try:
-        nodes_df, relationships_df = read_parquet_files(base_dir)
+        nodes_df, relationships_df = read_parquet_files()
         graph = create_graph(nodes_df, relationships_df)
         visualize_graph(graph)
     except FileNotFoundError as e:
